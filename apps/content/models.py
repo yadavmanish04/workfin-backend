@@ -47,8 +47,8 @@ class DashboardContent(models.Model):
     
     class Meta:
         ordering = ['screen']
-        verbose_name = 'Dashboard Content'
-        verbose_name_plural = 'Dashboard Contents'
+        verbose_name = 'Dashboard Text Message'
+        verbose_name_plural = 'Dashboard Text Messages'
     
     def __str__(self):
         return f"{self.get_screen_display()} - {self.main_heading[:30]}"

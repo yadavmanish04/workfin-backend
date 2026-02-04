@@ -1,6 +1,9 @@
 from django.contrib import admin
-from django import forms    
+from django import forms
+from django.utils.functional import cached_property
 from .models import *
+
+FILTER_OPTIONS_PAGE_SIZE = 25
 
 class WorkExperienceInline(admin.TabularInline):
     model = WorkExperience
@@ -17,14 +20,30 @@ class EducationInline(admin.TabularInline):
     extra = 1
     fields = ['institution_name', 'degree', 'field_of_study', 'start_year', 'end_year', 'is_ongoing', 'grade_percentage', 'location']
 
+class CertificationInline(admin.TabularInline):
+    model = Certification
+    extra = 1
+    fields = ['certification_name', 'issuing_organization', 'issue_date', 'expiry_date', 'is_lifetime', 'certificate_number', 'certificate_url', 'document']
+
 class FilterOptionInline(admin.TabularInline):
     model = FilterOption
-    extra = 1
-    fields = ['name', 'slug', 'parent', 'icon', 'display_order', 'is_active','is_approved', 'submitted_by', 'submitted_at']
-    readonly_fields = ['submitted_by', 'submitted_at']  
-
+    extra = 0
+    fields = ['name', 'slug', 'parent', 'icon', 'display_order', 'is_active', 'is_approved', 'submitted_by', 'submitted_at']
+    readonly_fields = ['submitted_by', 'submitted_at']
     can_delete = True
-    max_num = 100  # Limit to 100 items for performance
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+
+        class PaginatedFormset(formset):
+            def __init__(self_formset, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                page = int(request.GET.get('inline_page', 1))
+                start = (page - 1) * FILTER_OPTIONS_PAGE_SIZE
+                self_formset.queryset = self_formset.queryset[start:start + FILTER_OPTIONS_PAGE_SIZE]
+
+        PaginatedFormset.max_num = FILTER_OPTIONS_PAGE_SIZE
+        return PaginatedFormset
 
 @admin.register(FilterCategory)
 class FilterCategoryAdmin(admin.ModelAdmin):
@@ -34,10 +53,30 @@ class FilterCategoryAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     inlines = [FilterOptionInline]
     ordering = ['display_order', 'name']
+    change_form_template = 'candidates/filter_category_change_form.html'
 
     def option_count(self, obj):
         return obj.options.count()
     option_count.short_description = 'Number of Options'
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        if object_id:
+            obj = self.get_object(request, object_id)
+            if obj:
+                import math
+                total_count = obj.options.count()
+                total_pages = max(1, math.ceil(total_count / FILTER_OPTIONS_PAGE_SIZE))
+                current_page = int(request.GET.get('inline_page', 1))
+                current_page = max(1, min(current_page, total_pages))
+                extra_context['inline_pagination'] = {
+                    'current_page': current_page,
+                    'total_pages': total_pages,
+                    'total_count': total_count,
+                    'page_size': FILTER_OPTIONS_PAGE_SIZE,
+                    'page_range': range(1, total_pages + 1),
+                }
+        return super().changeform_view(request, object_id, form_url, extra_context)
 
 
 # Custom proxy model for pending locations
@@ -138,7 +177,7 @@ class CandidateAdmin(admin.ModelAdmin):
     search_fields = ['first_name', 'last_name', 'masked_name', 'user__email', 'skills','notice_period_details']
     readonly_fields = ['masked_name', 'created_at', 'updated_at', 'last_availability_update','declaration_agreed_at']
     raw_id_fields = ['user']
-    inlines = [WorkExperienceInline, CareerGapInline, EducationInline]
+    inlines = [WorkExperienceInline, CareerGapInline, EducationInline, CertificationInline]
     actions = ['verify_candidates', 'unverify_candidates']
 
     fieldsets = (
@@ -398,7 +437,7 @@ class HiringAvailabilityUIAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-# @admin.register(FilterOption)  # Removed from sidebar - accessible via FilterCategory inline
+# @admin.register(FilterOption)  # Accessible via FilterCategory inline only
 class FilterOptionAdmin(admin.ModelAdmin):
     list_display = [
         'name', 'category', 'approval_badge', 'is_active',

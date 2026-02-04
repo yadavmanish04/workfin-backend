@@ -283,6 +283,24 @@ class Education(models.Model):
     def __str__(self):
         return f"{self.candidate.masked_name} - {self.degree} from {self.institution_name}"
 
+class Certification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='certifications')
+    certification_name = models.CharField(max_length=255)
+    issuing_organization = models.CharField(max_length=255)
+    issue_date = models.DateField()
+    expiry_date = models.DateField(null=True, blank=True)  # Null for lifetime certs
+    is_lifetime = models.BooleanField(default=False)
+    certificate_number = models.CharField(max_length=255, blank=True)
+    certificate_url = models.URLField(max_length=500, blank=True, null=True)
+    document = models.FileField(upload_to='certifications/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-issue_date']
+
+    def __str__(self):
+        return f"{self.candidate.masked_name} - {self.certification_name} from {self.issuing_organization}"
 
 
 # Signal to auto-generate masked_name

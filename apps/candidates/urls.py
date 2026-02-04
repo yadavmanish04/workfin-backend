@@ -27,6 +27,7 @@ urlpatterns = [
     path('save-step/', save_candidate_step, name='save-candidate-step'),
     path('public/filter-options/', get_public_filter_options, name='public-filter-options'),
     path('profile-tips/', get_profile_tips, name='profile-tips'),
+    path('certifications/<uuid:certification_id>/upload/', upload_certification_document, name='certification-doc-upload'),
 
 
 

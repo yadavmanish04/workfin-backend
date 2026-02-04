@@ -49,7 +49,8 @@ class CandidateRegistrationView(generics.CreateAPIView):
         
         work_experience_data = request.data.get('work_experience')
         education_data = request.data.get('education')
-        
+        certifications_data = request.data.get('certifications')
+
         # Call parent create method first
         response = super().post(request, *args, **kwargs)
         
@@ -123,10 +124,34 @@ class CandidateRegistrationView(generics.CreateAPIView):
                         import traceback
                         traceback.print_exc()
                 
-                # Return full profile data with work_experiences, career_gaps and educations
+                # ✅ SAVE CERTIFICATIONS
+                if certifications_data:
+                    try:
+                        import json
+                        cert_list = json.loads(certifications_data)
+
+                        for i, cert_data in enumerate(cert_list):
+                            is_lifetime = cert_data.get('is_lifetime', False)
+                            Certification.objects.create(
+                                candidate=candidate,
+                                certification_name=cert_data.get('certification_name', ''),
+                                issuing_organization=cert_data.get('issuing_organization', ''),
+                                issue_date=cert_data.get('issue_date', ''),
+                                expiry_date=cert_data.get('expiry_date') if not is_lifetime else None,
+                                is_lifetime=is_lifetime,
+                                certificate_number=cert_data.get('certificate_number', ''),
+                                certificate_url=cert_data.get('certificate_url') or None,
+                                document=request.FILES.get(f'certification_doc_{i}'),
+                            )
+                    except Exception as e:
+                        print(f"❌ Certifications error: {e}")
+                        import traceback
+                        traceback.print_exc()
+
+                # Return full profile data with work_experiences, career_gaps, educations and certifications
                 candidate.refresh_from_db()
 
-                candidate = Candidate.objects.prefetch_related('educations', 'work_experiences', 'career_gaps').get(id=candidate.id)
+                candidate = Candidate.objects.prefetch_related('educations', 'work_experiences', 'career_gaps', 'certifications').get(id=candidate.id)
 
                 serializer = FullCandidateSerializer(candidate, context={'request': request})
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -468,11 +493,37 @@ def update_candidate_profile(request):
             except Exception as e:
                 print(f"Education parsing error: {e}")
         
-        # Remove work_experiences, career_gaps and educations from request.data for candidate update
+        # Handle certifications if provided
+        certifications_data = request.data.get('certifications')
+        if certifications_data:
+            candidate.certifications.all().delete()
+
+            try:
+                import json
+                cert_list = json.loads(certifications_data)
+
+                for i, cert_data in enumerate(cert_list):
+                    is_lifetime = cert_data.get('is_lifetime', False)
+                    Certification.objects.create(
+                        candidate=candidate,
+                        certification_name=cert_data.get('certification_name', ''),
+                        issuing_organization=cert_data.get('issuing_organization', ''),
+                        issue_date=cert_data.get('issue_date', ''),
+                        expiry_date=cert_data.get('expiry_date') if not is_lifetime else None,
+                        is_lifetime=is_lifetime,
+                        certificate_number=cert_data.get('certificate_number', ''),
+                        certificate_url=cert_data.get('certificate_url') or None,
+                        document=request.FILES.get(f'certification_doc_{i}'),
+                    )
+            except Exception as e:
+                print(f"Certifications parsing error: {e}")
+
+        # Remove work_experiences, career_gaps, educations and certifications from request.data for candidate update
         candidate_data = request.data.copy()
         candidate_data.pop('work_experiences', None)
         candidate_data.pop('career_gaps', None)
         candidate_data.pop('educations', None)
+        candidate_data.pop('certifications', None)
         
         # Use the same serializer with the same validation logic
         serializer = CandidateRegistrationSerializer(
@@ -1095,7 +1146,8 @@ def save_candidate_step(request):
         return Response({'error': 'Invalid step. Must be 1, 2, 3, or 4'}, status=400)
     
     step = int(step)
-    
+    is_final_submit = request.data.get('is_final_submit', 'false').lower() == 'true'
+
     try:
         candidate, created = Candidate.objects.get_or_create(
             user=request.user,
@@ -1458,6 +1510,28 @@ def save_candidate_step(request):
                         location=edu_data.get('location', '')
                     )
 
+            # ✅ SAVE CERTIFICATIONS
+            certifications_data = request.data.get('certifications')
+            if certifications_data:
+                candidate.certifications.all().delete()
+
+                import json
+                cert_list = json.loads(certifications_data)
+
+                for i, cert_data in enumerate(cert_list):
+                    is_lifetime = cert_data.get('is_lifetime', False)
+                    Certification.objects.create(
+                        candidate=candidate,
+                        certification_name=cert_data.get('certification_name', ''),
+                        issuing_organization=cert_data.get('issuing_organization', ''),
+                        issue_date=cert_data.get('issue_date', ''),
+                        expiry_date=cert_data.get('expiry_date') if not is_lifetime else None,
+                        is_lifetime=is_lifetime,
+                        certificate_number=cert_data.get('certificate_number', ''),
+                        certificate_url=cert_data.get('certificate_url') or None,
+                        document=request.FILES.get(f'certification_doc_{i}'),
+                    )
+
             # Mark step 3 as completed
             if not candidate.step3_completed:
                 update_data['step3_completed'] = True
@@ -1465,15 +1539,49 @@ def save_candidate_step(request):
 
         # ========== STEP 4: Documents ==========
         elif step == 4:
-            has_agreed = request.data.get('has_agreed_to_declaration')
-            if has_agreed == 'true' or has_agreed is True:
-                update_data['has_agreed_to_declaration'] = True
-                update_data['declaration_agreed_at'] = timezone.now()
-                
+            # Resume/video upload — auto-save mein bhi ho sakta hai
+            if 'resume' in request.FILES:
+                update_data['resume'] = request.FILES['resume']
+            if 'video_intro' in request.FILES:
+                update_data['video_intro'] = request.FILES['video_intro']
+
+            # Certifications — auto-save mein bhi save ho
+            certifications_data = request.data.get('certifications')
+            if certifications_data:
+                candidate.certifications.all().delete()
+
+                import json
+                cert_list = json.loads(certifications_data)
+
+                for i, cert_data in enumerate(cert_list):
+                    is_lifetime = cert_data.get('is_lifetime', False)
+                    Certification.objects.create(
+                        candidate=candidate,
+                        certification_name=cert_data.get('certification_name', ''),
+                        issuing_organization=cert_data.get('issuing_organization', ''),
+                        issue_date=cert_data.get('issue_date', ''),
+                        expiry_date=cert_data.get('expiry_date') if not is_lifetime else None,
+                        is_lifetime=is_lifetime,
+                        certificate_number=cert_data.get('certificate_number', ''),
+                        certificate_url=cert_data.get('certificate_url') or None,
+                        document=request.FILES.get(f'certification_doc_{i}'),
+                    )
+
+            # Profile completion — sirf final submit pe
+            if is_final_submit:
+                has_agreed = request.data.get('has_agreed_to_declaration')
+                if has_agreed == 'true' or has_agreed is True:
+                    update_data['has_agreed_to_declaration'] = True
+                    update_data['declaration_agreed_at'] = timezone.now()
+
                 # Mark step 4 as completed
                 if not candidate.step4_completed:
                     update_data['step4_completed'] = True
                     update_data['step4_completed_at'] = timezone.now()
+
+                update_data['is_profile_completed'] = True
+                reminder.is_profile_completed = True
+                reminder.save()
 
                 # Send notification
                 try:
@@ -1490,15 +1598,6 @@ def save_candidate_step(request):
                     )
                 except Exception as e:
                     print(f'[DEBUG] Failed to send notification: {str(e)}')
-
-            if 'resume' in request.FILES:
-                update_data['resume'] = request.FILES['resume']
-            if 'video_intro' in request.FILES:
-                update_data['video_intro'] = request.FILES['video_intro']
-            
-            update_data['is_profile_completed'] = True
-            reminder.is_profile_completed = True
-            reminder.save()
         
         # ========== UPDATE CANDIDATE ==========
         for field, value in update_data.items():
@@ -2128,4 +2227,58 @@ def search_cities(request):
             'success': False,
             'error': 'City category not found'
         }, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def upload_certification_document(request, certification_id):
+    """Upload or remove document for a candidate's certification"""
+
+    if request.user.role != 'candidate':
+        return Response({
+            'error': 'Only candidates can upload certification documents'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        certification = Certification.objects.get(
+            id=certification_id,
+            candidate__user=request.user
+        )
+    except Certification.DoesNotExist:
+        return Response({
+            'error': 'Certification not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    # DELETE: Remove document
+    if request.method == 'DELETE':
+        if certification.document:
+            certification.document.delete(save=False)
+        certification.document = None
+        certification.save()
+        return Response({
+            'success': True,
+            'message': 'Document removed successfully'
+        })
+
+    # POST: Upload document
+    document = request.FILES.get('document')
+    if not document:
+        return Response({
+            'error': 'No document provided. Send file with key "document"'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Delete old document if exists before saving new one
+    if certification.document:
+        certification.document.delete(save=False)
+
+    certification.document = document
+    certification.save()
+
+    from .serializers import CertificationSerializer
+    return Response({
+        'success': True,
+        'message': 'Document uploaded successfully',
+        'certification': CertificationSerializer(certification, context={'request': request}).data
+    })
 

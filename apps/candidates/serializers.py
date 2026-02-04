@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Candidate, ProfileTip, UnlockHistory, FilterCategory, FilterOption, CandidateNote, CandidateFollowup, WorkExperience, Education, CareerGap
+from .models import Candidate, ProfileTip, UnlockHistory, FilterCategory, FilterOption, CandidateNote, CandidateFollowup, WorkExperience, Education, CareerGap, Certification
 from django.utils import timezone
 import pytz
 
@@ -37,6 +37,21 @@ class EducationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Education
         fields = ['id', 'institution_name', 'degree', 'field_of_study', 'start_year', 'end_year', 'is_ongoing', 'grade_percentage', 'location']
+
+class CertificationSerializer(serializers.ModelSerializer):
+    document_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Certification
+        fields = ['id', 'certification_name', 'issuing_organization', 'issue_date', 'expiry_date', 'is_lifetime', 'certificate_number', 'certificate_url', 'document_url']
+
+    def get_document_url(self, obj):
+        if obj.document:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.document.url)
+            return obj.document.url
+        return None
 
 class CandidateNoteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -419,6 +434,7 @@ class FullCandidateSerializer(serializers.ModelSerializer):
     work_experiences = WorkExperienceSerializer(many=True, read_only=True)
     career_gaps = CareerGapSerializer(many=True, read_only=True)
     educations = EducationSerializer(many=True, read_only=True)
+    certifications = CertificationSerializer(many=True, read_only=True)
     experience_years = serializers.SerializerMethodField()
 
 
@@ -431,7 +447,7 @@ class FullCandidateSerializer(serializers.ModelSerializer):
             'skills', 'skills_list',
             'resume_url', 'video_intro_url', 'profile_image_url', 'credits_used',
             'languages', 'street_address', 'willing_to_relocate', 'career_objective',
-            'work_experiences', 'career_gaps', 'educations','profile_step', 'is_profile_completed',
+            'work_experiences', 'career_gaps', 'educations', 'certifications', 'profile_step', 'is_profile_completed',
             'joining_availability', 'notice_period_details',
             'is_verified', 'is_available_for_hiring', 'last_availability_update',
             'has_agreed_to_declaration', 'declaration_agreed_at'
