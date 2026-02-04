@@ -131,16 +131,11 @@ class CandidateRegistrationView(generics.CreateAPIView):
                         cert_list = json.loads(certifications_data)
 
                         for i, cert_data in enumerate(cert_list):
-                            is_lifetime = cert_data.get('is_lifetime', False)
                             Certification.objects.create(
                                 candidate=candidate,
                                 certification_name=cert_data.get('certification_name', ''),
                                 issuing_organization=cert_data.get('issuing_organization', ''),
                                 issue_date=cert_data.get('issue_date', ''),
-                                expiry_date=cert_data.get('expiry_date') if not is_lifetime else None,
-                                is_lifetime=is_lifetime,
-                                certificate_number=cert_data.get('certificate_number', ''),
-                                certificate_url=cert_data.get('certificate_url') or None,
                                 document=request.FILES.get(f'certification_doc_{i}'),
                             )
                     except Exception as e:
@@ -503,16 +498,11 @@ def update_candidate_profile(request):
                 cert_list = json.loads(certifications_data)
 
                 for i, cert_data in enumerate(cert_list):
-                    is_lifetime = cert_data.get('is_lifetime', False)
                     Certification.objects.create(
                         candidate=candidate,
                         certification_name=cert_data.get('certification_name', ''),
                         issuing_organization=cert_data.get('issuing_organization', ''),
                         issue_date=cert_data.get('issue_date', ''),
-                        expiry_date=cert_data.get('expiry_date') if not is_lifetime else None,
-                        is_lifetime=is_lifetime,
-                        certificate_number=cert_data.get('certificate_number', ''),
-                        certificate_url=cert_data.get('certificate_url') or None,
                         document=request.FILES.get(f'certification_doc_{i}'),
                     )
             except Exception as e:
@@ -1519,16 +1509,11 @@ def save_candidate_step(request):
                 cert_list = json.loads(certifications_data)
 
                 for i, cert_data in enumerate(cert_list):
-                    is_lifetime = cert_data.get('is_lifetime', False)
                     Certification.objects.create(
                         candidate=candidate,
                         certification_name=cert_data.get('certification_name', ''),
                         issuing_organization=cert_data.get('issuing_organization', ''),
                         issue_date=cert_data.get('issue_date', ''),
-                        expiry_date=cert_data.get('expiry_date') if not is_lifetime else None,
-                        is_lifetime=is_lifetime,
-                        certificate_number=cert_data.get('certificate_number', ''),
-                        certificate_url=cert_data.get('certificate_url') or None,
                         document=request.FILES.get(f'certification_doc_{i}'),
                     )
 
@@ -1554,16 +1539,11 @@ def save_candidate_step(request):
                 cert_list = json.loads(certifications_data)
 
                 for i, cert_data in enumerate(cert_list):
-                    is_lifetime = cert_data.get('is_lifetime', False)
                     Certification.objects.create(
                         candidate=candidate,
                         certification_name=cert_data.get('certification_name', ''),
                         issuing_organization=cert_data.get('issuing_organization', ''),
                         issue_date=cert_data.get('issue_date', ''),
-                        expiry_date=cert_data.get('expiry_date') if not is_lifetime else None,
-                        is_lifetime=is_lifetime,
-                        certificate_number=cert_data.get('certificate_number', ''),
-                        certificate_url=cert_data.get('certificate_url') or None,
                         document=request.FILES.get(f'certification_doc_{i}'),
                     )
 

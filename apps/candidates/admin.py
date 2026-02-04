@@ -23,7 +23,7 @@ class EducationInline(admin.TabularInline):
 class CertificationInline(admin.TabularInline):
     model = Certification
     extra = 1
-    fields = ['certification_name', 'issuing_organization', 'issue_date', 'expiry_date', 'is_lifetime', 'certificate_number', 'certificate_url', 'document']
+    fields = ['certification_name', 'issuing_organization', 'issue_date', 'document']
 
 class FilterOptionInline(admin.TabularInline):
     model = FilterOption

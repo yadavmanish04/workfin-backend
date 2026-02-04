@@ -40,10 +40,11 @@ class EducationSerializer(serializers.ModelSerializer):
 
 class CertificationSerializer(serializers.ModelSerializer):
     document_url = serializers.SerializerMethodField()
+    organization_logo = serializers.SerializerMethodField()
 
     class Meta:
         model = Certification
-        fields = ['id', 'certification_name', 'issuing_organization', 'issue_date', 'expiry_date', 'is_lifetime', 'certificate_number', 'certificate_url', 'document_url']
+        fields = ['id', 'certification_name', 'issuing_organization', 'issue_date', 'document_url', 'organization_logo']
 
     def get_document_url(self, obj):
         if obj.document:
@@ -51,6 +52,19 @@ class CertificationSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.document.url)
             return obj.document.url
+        return None
+
+    def get_organization_logo(self, obj):
+        from apps.recruiters.models import Company
+        try:
+            company = Company.objects.get(name__iexact=obj.issuing_organization)
+            if company.logo:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(company.logo.url)
+                return company.logo.url
+        except Company.DoesNotExist:
+            pass
         return None
 
 class CandidateNoteSerializer(serializers.ModelSerializer):

@@ -289,10 +289,6 @@ class Certification(models.Model):
     certification_name = models.CharField(max_length=255)
     issuing_organization = models.CharField(max_length=255)
     issue_date = models.DateField()
-    expiry_date = models.DateField(null=True, blank=True)  # Null for lifetime certs
-    is_lifetime = models.BooleanField(default=False)
-    certificate_number = models.CharField(max_length=255, blank=True)
-    certificate_url = models.URLField(max_length=500, blank=True, null=True)
     document = models.FileField(upload_to='certifications/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
