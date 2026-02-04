@@ -57,7 +57,7 @@ INSTALLED_APPS = [
     'apps.banners',
     'apps.notifications',
     'apps.app_version',
-    'apps.content',
+    'apps.dashboard_text_message',
 
     'rest_framework_simplejwt.token_blacklist',
 

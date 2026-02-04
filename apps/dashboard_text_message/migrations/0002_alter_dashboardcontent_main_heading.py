@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('content', '0001_initial'),
+        ('dashboard_text_message', '0001_initial'),
     ]
 
     operations = [
