@@ -378,14 +378,17 @@ class MaskedCandidateSerializer(serializers.ModelSerializer):
     role_name = serializers.CharField(source='role.name', read_only=True)
     city_name = serializers.CharField(source='city.name', read_only=True)
     profile_image_url = serializers.SerializerMethodField()
-    experience_years = serializers.SerializerMethodField()  
+    experience_years = serializers.SerializerMethodField()
+    credits_required = serializers.SerializerMethodField()
+    rank = serializers.SerializerMethodField()
+    current_role_title = serializers.SerializerMethodField()
 
 
     class Meta:
         model = Candidate
         fields = [
-            'id', 'masked_name', 'role_name', 'experience_years',
-            'city_name', 'age', 'skills', 'profile_image_url', 'is_active', 'is_available_for_hiring'
+            'id', 'masked_name', 'role_name', 'current_role_title', 'experience_years',
+            'city_name', 'age', 'skills', 'profile_image_url', 'is_active', 'is_available_for_hiring', 'is_verified', 'credits_required', 'rank'
         ]
     
     def get_profile_image_url(self, obj):
@@ -430,6 +433,38 @@ class MaskedCandidateSerializer(serializers.ModelSerializer):
         else:
             return f"{years} Yr {months} Mo"
 
+    def get_credits_required(self, obj):
+        """Get credits required to unlock this candidate"""
+        try:
+            return obj.rank.credits_required
+        except:
+            return 10  # Default BRONZE tier minimum
+
+    def get_rank(self, obj):
+        """Get ranking score for masked candidate to enable sorting"""
+        from apps.ranking.services import get_candidate_rank_breakdown
+        try:
+            return get_candidate_rank_breakdown(obj)
+        except Exception as e:
+            return None
+
+    def get_current_role_title(self, obj):
+        """Get the latest/current role title from work experiences"""
+        # Get the most recent work experience (is_current=True or latest end_date)
+        current_exp = obj.work_experiences.filter(is_current=True).first()
+
+        if current_exp:
+            return current_exp.role_title
+
+        # If no current experience, get the latest one by end_date
+        latest_exp = obj.work_experiences.order_by('-end_date').first()
+
+        if latest_exp:
+            return latest_exp.role_title
+
+        # Fallback to role_name if no work experience
+        return obj.role.name if obj.role else None
+
 class FullCandidateSerializer(serializers.ModelSerializer):
     skills_list = serializers.SerializerMethodField()
     email = serializers.CharField(source='user.email', read_only=True)
@@ -450,6 +485,7 @@ class FullCandidateSerializer(serializers.ModelSerializer):
     educations = EducationSerializer(many=True, read_only=True)
     certifications = CertificationSerializer(many=True, read_only=True)
     experience_years = serializers.SerializerMethodField()
+    rank = serializers.SerializerMethodField()
 
 
     class Meta:
@@ -464,7 +500,7 @@ class FullCandidateSerializer(serializers.ModelSerializer):
             'work_experiences', 'career_gaps', 'educations', 'certifications', 'profile_step', 'is_profile_completed',
             'joining_availability', 'notice_period_details',
             'is_verified', 'is_available_for_hiring', 'last_availability_update',
-            'has_agreed_to_declaration', 'declaration_agreed_at'
+            'has_agreed_to_declaration', 'declaration_agreed_at', 'rank'
         ]
     
     def get_skills_list(self, obj):
@@ -531,6 +567,13 @@ class FullCandidateSerializer(serializers.ModelSerializer):
             ist_time = obj.last_availability_update.astimezone(ist)
             return ist_time.strftime('%d %b %Y, %I:%M %p IST')
         return None
+
+    def get_rank(self, obj):
+        from apps.ranking.services import get_candidate_rank_breakdown
+        try:
+            return get_candidate_rank_breakdown(obj)
+        except Exception as e:
+            return None
     
 
 

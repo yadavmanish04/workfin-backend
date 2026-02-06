@@ -26,6 +26,8 @@ class HRRegistrationView(generics.CreateAPIView):
                 serializer.save()
                 # Refresh from database to get updated company with locations
                 profile.refresh_from_db()
+                # Update profile step
+                profile.update_profile_step()
                 # Return with HRProfileSerializer to get full company details
                 response_serializer = HRProfileSerializer(profile, context={'request': request})
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -37,6 +39,8 @@ class HRRegistrationView(generics.CreateAPIView):
             hr_profile = serializer.save()
             # Refresh from database to get related company with locations
             hr_profile.refresh_from_db()
+            # Update profile step
+            hr_profile.update_profile_step()
             # Return with HRProfileSerializer to get full company details
             response_serializer = HRProfileSerializer(hr_profile, context={'request': request})
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -66,13 +70,19 @@ def update_hr_profile(request):
         return Response({
             'error': 'Only HR users can access this'
         }, status=status.HTTP_403_FORBIDDEN)
-    
+
     try:
         profile = request.user.hr_profile
         serializer = HRProfileSerializer(profile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            # Refresh from database to get latest data
+            profile.refresh_from_db()
+            # Update profile step
+            profile.update_profile_step()
+            # Serialize again to get updated profile_step and is_profile_completed
+            updated_serializer = HRProfileSerializer(profile, context={'request': request})
+            return Response(updated_serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except HRProfile.DoesNotExist:
         return Response({

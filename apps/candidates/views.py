@@ -249,7 +249,12 @@ def unlock_candidate(request, candidate_id):
 
         try:
             wallet = Wallet.objects.get(hr_profile__user=request.user)
-            credits_required = 10
+
+            # Dynamic credits from ranking system
+            try:
+                credits_required = candidate.rank.credits_required
+            except:
+                credits_required = 5  # Default BRONZE tier
 
             # Check if user can unlock (checks subscription + wallet)
             if not wallet.can_unlock(credits_required):

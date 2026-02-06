@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/notifications/', include('apps.notifications.urls')),
     path('api/app-version/', include('apps.app_version.urls')),
     path('api/content/', include('apps.dashboard_text_message.urls')),
+    path('api/ranking/', include('apps.ranking.urls')),
 
     path('api/subscriptions/', include('apps.subscriptions.urls')),
 

@@ -14,7 +14,36 @@ User = get_user_model()
 
 class WorkfinaFCMService:
     """Workfina-specific FCM notification service"""
-    
+
+    @staticmethod
+    def get_user_display_name(user) -> str:
+        """Get user's full name from profile or fallback to email"""
+        # For candidates, check their profile first
+        if user.role == 'candidate':
+            try:
+                # ForeignKey relationship, get first candidate profile
+                candidate = user.candidate_profile.first()
+                if candidate:
+                    if candidate.first_name and candidate.last_name:
+                        return f"{candidate.first_name} {candidate.last_name}".strip()
+                    elif candidate.first_name:
+                        return candidate.first_name
+                    elif candidate.last_name:
+                        return candidate.last_name
+            except Exception:
+                pass
+
+        # Fallback to User model names
+        if user.first_name and user.last_name:
+            return f"{user.first_name} {user.last_name}".strip()
+        elif user.first_name:
+            return user.first_name
+        elif user.last_name:
+            return user.last_name
+        else:
+            # Last resort: extract username from email
+            return user.email.split('@')[0]
+
     @staticmethod
     def send_notification(notification) -> Dict:
         """Send individual notification via FCM"""
@@ -148,10 +177,10 @@ class WorkfinaFCMService:
             if not template:
                 # Fallback welcome message
                 title = "Welcome to Workfina! 🎉"
-                body = f"Hi {user.first_name or user.email}, welcome to Workfina! Complete your profile to get started."
+                body = f"Hi {WorkfinaFCMService.get_user_display_name(user)}, welcome to Workfina! Complete your profile to get started."
             else:
                 # Use template with user context
-                context = Context({'user_name': user.first_name or user.email, 'user_email': user.email})
+                context = Context({'user_name': WorkfinaFCMService.get_user_display_name(user), 'user_email': user.email})
                 title = Template(template.title).render(context)
                 body = Template(template.body).render(context)
             
@@ -191,7 +220,7 @@ class WorkfinaFCMService:
             
             if template:
                 context = Context({
-                    'user_name': user.first_name or user.email,
+                    'user_name': WorkfinaFCMService.get_user_display_name(user),
                     'current_step': current_step,
                     'next_step': current_step + 1,
                     'reminder_type': reminder_type
@@ -202,7 +231,7 @@ class WorkfinaFCMService:
                 # Fallback messages based on reminder type
                 if reminder_type == 'first':
                     title = "Complete Your Profile 📋"
-                    body = f"Hi {user.first_name or user.email}, you're on step {current_step}. Complete your profile to find better opportunities!"
+                    body = f"Hi {WorkfinaFCMService.get_user_display_name(user)}, you're on step {current_step}. Complete your profile to find better opportunities!"
                 elif reminder_type == 'second':
                     title = "Don't Miss Out! Complete Profile 🚀"
                     body = f"Your profile is {(current_step-1)*25}% complete. Finish it now to get noticed by top recruiters!"
@@ -315,7 +344,7 @@ class WorkfinaFCMService:
             
             if template:
                 context = Context({
-                    'user_name': user.first_name or user.email,
+                    'user_name': WorkfinaFCMService.get_user_display_name(user),
                     'credits_added': credits_added,
                     'current_balance': current_balance
                 })
@@ -323,7 +352,7 @@ class WorkfinaFCMService:
                 body = Template(template.body).render(context)
             else:
                 title = f"Credits Added! 💰"
-                body = f"Hi {user.first_name or user.email}, {credits_added} credits have been added to your account. Current balance: {current_balance}"
+                body = f"Hi {WorkfinaFCMService.get_user_display_name(user)}, {credits_added} credits have been added to your account. Current balance: {current_balance}"
             
             return WorkfinaFCMService.send_to_user(
                 user=user,
@@ -456,14 +485,16 @@ class WorkfinaFCMService:
                     continue
 
                 if template:
-                    title = template.title
-                    body = template.body.format(
-                        user_name=user.first_name or user.email,
-                        current_status='Available' if candidate.is_available_for_hiring else 'Not Available'
-                    )
+                    # Use Django template rendering instead of .format()
+                    context = Context({
+                        'user_name': WorkfinaFCMService.get_user_display_name(user),
+                        'current_status': 'Available' if candidate.is_available_for_hiring else 'Not Available'
+                    })
+                    title = Template(template.title).render(context)
+                    body = Template(template.body).render(context)
                 else:
                     title = "Are you still available for hiring?"
-                    body = f"Hi {user.first_name or 'there'}! Please confirm if you're still open to new job opportunities. Update your availability status."
+                    body = f"Hi {WorkfinaFCMService.get_user_display_name(user)}! Please confirm if you're still open to new job opportunities. Update your availability status."
 
                 result = WorkfinaFCMService.send_to_user(
                     user=user,
@@ -521,11 +552,16 @@ def send_welcome_notification(sender, instance, created, **kwargs):
             ).first()
             
             if template:
+                # Render template with user context
+                context = Context({'user_name': WorkfinaFCMService.get_user_display_name(instance), 'user_email': instance.email})
+                title = Template(template.title).render(context)
+                body = Template(template.body).render(context)
+
                 UserNotification.objects.create(
                     user=instance,
                     template=template,
-                    title=template.title,
-                    body=template.body.format(user_name=instance.first_name or instance.email),
+                    title=title,
+                    body=body,
                     scheduled_for=timezone.now() + timedelta(seconds=30),
                     data_payload={'welcome': True, 'user_role': instance.role}
                 )

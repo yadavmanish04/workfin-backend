@@ -264,11 +264,12 @@ class HRProfileSerializer(serializers.ModelSerializer):
         fields = [
             'email', 'full_name', 'designation', 'phone',
             'is_verified', 'verification_status',
+            'profile_step', 'is_profile_completed',
             'company_details', 'balance', 'total_spent',
             'company_name', 'company_logo', 'company_website', 'company_size',
             'city_id', 'state_id', 'country_id', 'address', 'is_headquarters'
         ]
-        read_only_fields = ['email', 'balance', 'total_spent', 'company_details', 'is_verified', 'verification_status']
+        read_only_fields = ['email', 'balance', 'total_spent', 'company_details', 'is_verified', 'verification_status', 'profile_step', 'is_profile_completed']
 
     def get_verification_status(self, obj):
         """

@@ -81,6 +81,14 @@ class HRProfile(models.Model):
         default=False,
         help_text="HR profile verification status (separate from company verification)"
     )
+    profile_step = models.IntegerField(
+        default=0,
+        help_text="Profile setup step: 0=not started, 1=basic info filled, 2=complete"
+    )
+    is_profile_completed = models.BooleanField(
+        default=False,
+        help_text="Indicates if recruiter has completed profile setup"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -91,3 +99,25 @@ class HRProfile(models.Model):
     def __str__(self):
         company_name = self.company.name if self.company else "No Company"
         return f"{company_name} - {self.user.email}"
+
+    def update_profile_step(self):
+        """
+        Updates profile_step and is_profile_completed based on filled fields
+        Step 0: Registration complete (email, password set)
+        Step 1: Basic info filled (name, phone, designation)
+        Step 2: Company details filled (company selected/created) → Complete
+        """
+        # Check if basic info is filled
+        if self.full_name and self.phone and self.designation:
+            self.profile_step = 1
+        else:
+            self.profile_step = 0
+
+        # Check if company is linked and profile step is at least 1
+        if self.company and self.profile_step >= 1:
+            self.profile_step = 2
+            self.is_profile_completed = True
+        else:
+            self.is_profile_completed = False
+
+        self.save()
