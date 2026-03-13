@@ -1,0 +1,17 @@
+Table: api_logs_apilog -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION
+Table: app_version_versionchecklog -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION
+Table: authentication_user_groups -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION
+Table: authentication_user_user_permissions -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION
+Table: candidates_candidate -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION
+Table: candidates_filteroption -> Target: authentication_user | Column: approved_by_id -> id | OnDelete: NO ACTION
+Table: candidates_filteroption -> Target: authentication_user | Column: submitted_by_id -> id | OnDelete: NO ACTION
+Table: django_admin_log -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION
+Table: notifications_notificationlog -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION
+Table: notifications_notificationlog -> Target: notifications_usernotification | Column: notification_id -> id | OnDelete: NO ACTION
+Table: notifications_profilestepreminder -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION
+Table: notifications_usernotification -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION
+Table: recruiters_hrprofile -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION
+Table: subscriptions_companysubscription -> Target: authentication_user | Column: approved_by_id -> id | OnDelete: NO ACTION
+Table: subscriptions_companysubscription -> Target: authentication_user | Column: cancelled_by_id -> id | OnDelete: NO ACTION
+Table: subscriptions_subscriptionhistory -> Target: authentication_user | Column: performed_by_id -> id | OnDelete: NO ACTION
+Table: token_blacklist_outstandingtoken -> Target: authentication_user | Column: user_id -> id | OnDelete: NO ACTION

@@ -551,12 +551,26 @@ def update_candidate_profile(request):
 
 def _month_to_number(month_name):
     """Convert month name to number"""
+    if not month_name:  # ✅ Handle None, empty string
+        return '01'
     months = {
         'January': '01', 'February': '02', 'March': '03', 'April': '04',
         'May': '05', 'June': '06', 'July': '07', 'August': '08',
         'September': '09', 'October': '10', 'November': '11', 'December': '12'
     }
     return months.get(month_name, '01')
+
+def _safe_date_string(year, month_name, default_day='01'):
+    """Safely construct date string, returns None if year is invalid"""
+    if not year or year == 'null' or year == '':
+        return None
+    
+    try:
+        year_int = int(year)
+        month_num = _month_to_number(month_name)
+        return f"{year_int}-{month_num}-{default_day}"
+    except (ValueError, TypeError):
+        return None    
     
     
 @api_view(['GET'])
@@ -1438,26 +1452,49 @@ def save_candidate_step(request):
                     is_gap = exp_data.get('is_gap_period', False)
 
                     if is_gap:
-                        # Save as CareerGap
-                        CareerGap.objects.create(
-                            candidate=candidate,
-                            start_date=f"{exp_data.get('start_year')}-{_month_to_number(exp_data.get('start_month'))}-01",
-                            end_date=f"{exp_data.get('end_year')}-{_month_to_number(exp_data.get('end_month'))}-01",
-                            gap_reason=exp_data.get('gap_reason', '')
-                        )
-                        print(f"✅ Saved career gap in step 2: {exp_data.get('gap_reason')}")
+                        start_year = exp_data.get('start_year')
+                        start_month = exp_data.get('start_month')
+                        end_year = exp_data.get('end_year')
+                        end_month = exp_data.get('end_month')
+                        
+                        start_date = _safe_date_string(start_year, start_month)
+                        end_date = _safe_date_string(end_year, end_month)
+                        
+                        if start_date and end_date:  # Only create if dates are valid
+                            # Save as CareerGap
+                            CareerGap.objects.create(
+                                candidate=candidate,
+                                start_date=start_date,
+                                end_date=end_date,
+                                gap_reason=exp_data.get('gap_reason', '')
+                            )
+                            print(f"✅ Saved career gap in step 2: {exp_data.get('gap_reason')}")
                     else:
-                        # Save as WorkExperience
-                        WorkExperience.objects.create(
-                            candidate=candidate,
-                            company_name=exp_data.get('company_name', ''),
-                            role_title=exp_data.get('role_title', ''),
-                            start_date=f"{exp_data.get('start_year')}-{_month_to_number(exp_data.get('start_month'))}-01",
-                            end_date=f"{exp_data.get('end_year')}-{_month_to_number(exp_data.get('end_month'))}-01" if not exp_data.get('is_current') and exp_data.get('end_year') else None,
-                            is_current=exp_data.get('is_current', False),
-                            current_ctc=float(exp_data.get('ctc', 0)) if exp_data.get('ctc') else None,
-                            location=exp_data.get('location', ''),
-                            description=exp_data.get('description', ''),
+                        start_year = exp_data.get('start_year')
+                        start_month = exp_data.get('start_month')
+                        end_year = exp_data.get('end_year')
+                        end_month = exp_data.get('end_month')
+                        is_current = exp_data.get('is_current', False)
+                
+                        start_date = _safe_date_string(start_year, start_month)
+                
+                        # Only construct end_date if NOT current and has valid year
+                        end_date = None
+                        if not is_current and end_year:
+                            end_date = _safe_date_string(end_year, end_month)
+                
+                        if start_date:  # Only create if start_date is valid
+                            # Save as WorkExperience
+                            WorkExperience.objects.create(
+                                candidate=candidate,
+                                company_name=exp_data.get('company_name', ''),
+                                role_title=exp_data.get('role_title', ''),
+                                start_date=start_date,
+                                end_date=end_date,
+                                is_current=is_current,
+                                current_ctc=float(exp_data.get('ctc', 0)) if exp_data.get('ctc') else None,
+                                location=exp_data.get('location', ''),
+                                description=exp_data.get('description', ''),
                         )
                         print(f"✅ Saved work experience in step 2: {exp_data.get('company_name')}")
 

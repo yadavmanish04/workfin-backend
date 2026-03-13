@@ -125,8 +125,10 @@ def notify_hr_on_profile_creation(sender, instance, created, **kwargs):
     if created:
         # Get the candidate's full name
         candidate_name = f"{instance.first_name} {instance.last_name}"
-        registration_time = timezone.now().strftime("%-d %B %Y at %-I:%M %p")
-
+        # registration_time = timezone.now().strftime("%d %B %Y at %I:%M %p")
+        now = timezone.now()
+        registration_time = f"{now.day} {now.strftime('%B %Y at %I:%M %p')}"
+    
         # Create notification for admin/HR about new candidate profile completion
         notification_title = "Candidate Profile Created"
         notification_body = f"{candidate_name} completed their candidate profile on {registration_time}"
