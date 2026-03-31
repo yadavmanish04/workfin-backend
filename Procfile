@@ -1,0 +1,1 @@
+web: gunicorn workfina-backend.wsgi:application
