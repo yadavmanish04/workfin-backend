@@ -105,7 +105,7 @@ class Candidate(models.Model):
     is_profile_completed = models.BooleanField(default=False)
     has_agreed_to_declaration = models.BooleanField(default=False, help_text="Candidate agreed to declaration")
     declaration_agreed_at = models.DateTimeField(null=True, blank=True, help_text="When candidate agreed to declaration")
-    work_experience_details = models.ManyToManyField('WorkExperience', blank=True, related_name='candidates')
+    # work_experience_details = models.ManyToManyField('WorkExperience', blank=True, related_name='candidates')
 
     # Step completion tracking
     step1_completed = models.BooleanField(default=False, help_text="Basic information filled")
