@@ -1,1 +1,1 @@
-web: gunicorn workfin-backend.wsgi:application
+web: gunicorn server.wsgi --log-file -
