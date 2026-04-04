@@ -34,11 +34,22 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 
-ALLOWED_HOSTS = ['*']  # Allow all hosts for development
+# ALLOWED_HOSTS = ['*']  # Allow all hosts for development
 
 # ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.4', '*']
 
+ALLOWED_HOSTS = [
+    "workfin-backend-production.up.railway.app",
+    "localhost",
+    "127.0.0.1"
+]
 
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://workfin-backend-production.up.railway.app"
+]
 # Application definition
 
 INSTALLED_APPS = [

@@ -17,7 +17,7 @@ def company_logo_path(instance, filename):
 
 class Company(models.Model):
     """Company model to store centralized company information"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True)
     logo = models.ImageField(
         upload_to=company_logo_path,
@@ -71,7 +71,8 @@ class CompanyLocation(models.Model):
 
 
 class HRProfile(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='hr_profile')
     full_name = models.CharField(max_length=255, blank=True, default='')
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='recruiters', null=True, blank=True)
