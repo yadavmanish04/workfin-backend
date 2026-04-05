@@ -17,7 +17,7 @@ def company_logo_path(instance, filename):
 
 class Company(models.Model):
     """Company model to store centralized company information"""
-    # id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, unique=True)
     logo = models.ImageField(
         upload_to=company_logo_path,
