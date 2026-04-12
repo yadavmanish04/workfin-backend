@@ -18,7 +18,8 @@ def send_otp_email(email, otp):
     # Plain text version
     plain_message = strip_tags(html_message)
     
-    from_email = settings.EMAIL_HOST_USER
+    # from_email = settings.EMAIL_HOST_USER
+    from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = [email]
     
     send_mail(
