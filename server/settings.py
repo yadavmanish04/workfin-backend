@@ -243,26 +243,13 @@ AUTH_USER_MODEL = 'authentication.User'
 
 
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-# EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-# DEFAULT_FROM_EMAIL = 'WorkFina <{}>'.format(EMAIL_HOST_USER)
-
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('BREVO_LOGIN')
-EMAIL_HOST_PASSWORD = config('BREVO_SMTP_KEY')
-DEFAULT_FROM_EMAIL = f'WorkFina <{config("BREVO_LOGIN", default="")}>'
-
-import logging
-logging.info(f"EMAIL HOST: {EMAIL_HOST}, USER: {EMAIL_HOST_USER}")
-
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = 'WorkFina <{}>'.format(EMAIL_HOST_USER)
 
 
 LOGGING = {
