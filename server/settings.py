@@ -260,6 +260,9 @@ EMAIL_HOST_USER = config('BREVO_LOGIN')
 EMAIL_HOST_PASSWORD = config('BREVO_SMTP_KEY')
 DEFAULT_FROM_EMAIL = f'WorkFina <{config("BREVO_LOGIN", default="")}>'
 
+import logging
+logging.info(f"EMAIL HOST: {EMAIL_HOST}, USER: {EMAIL_HOST_USER}")
+
 
 
 LOGGING = {
